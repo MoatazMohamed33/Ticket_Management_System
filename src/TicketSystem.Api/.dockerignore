@@ -1,0 +1,12 @@
+**/bin
+**/obj
+**/*.user
+**/.vs
+**/TestResults
+**/coverage
+**/.git
+**/.gitignore
+**/.env
+**/*.md
+node_modules
+dist

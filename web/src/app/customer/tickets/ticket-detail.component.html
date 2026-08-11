@@ -1,0 +1,198 @@
+@if (loading()) {
+  <div class="state">Loading ticket…</div>
+} @else if (error()) {
+  <div class="alert alert-danger">
+    {{ error() }}
+    <div style="margin-top: var(--space-3);">
+      <a routerLink="/customer/tickets" class="btn-secondary">Back to my tickets</a>
+    </div>
+  </div>
+} @else {
+@if (ticket(); as t) {
+  @if (conflict(); as c) {
+    <app-concurrency-banner
+      [conflictAt]="c.at"
+      [conflictBy]="c.by"
+      (reload)="load(t.id)" />
+  }
+  <section class="detail-header">
+    <div class="breadcrumb">
+      <a routerLink="/customer/tickets">My tickets</a> <span aria-hidden="true">›</span>
+    </div>
+    <h1>{{ t.title }}</h1>
+    <div class="meta-badges">
+      @if (canMutateStatus() && legalNextStatuses().length > 0) {
+        <select #statusSel class="status-select"
+                [disabled]="statusChanging()"
+                (change)="onStatusChange(statusSel.value, statusSel)">
+          <option [value]="t.status" selected>{{ t.status }} (current)</option>
+          @for (s of legalNextStatuses(); track s) {
+            <option [value]="s">Move to {{ s }}</option>
+          }
+        </select>
+      } @else {
+        <span class="badge status-badge" [attr.data-status]="t.status"
+              [attr.aria-label]="'Status: ' + t.status">
+          <span class="dot" aria-hidden="true"></span>{{ t.status }}
+        </span>
+      }
+      @if (canMutatePriority()) {
+        <select #prioritySel class="priority-select"
+                [disabled]="priorityChanging()"
+                (change)="onPriorityChange(prioritySel.value, prioritySel)">
+          <option [value]="t.priority" selected>{{ t.priority }} (current)</option>
+          @for (p of priorityOptions; track p) {
+            @if (p !== t.priority) { <option [value]="p">Set to {{ p }}</option> }
+          }
+        </select>
+      } @else {
+        <span class="badge priority-badge" [attr.data-priority]="t.priority"
+              [attr.aria-label]="'Priority: ' + t.priority">
+          <span class="dot" aria-hidden="true"></span>{{ t.priority }}
+        </span>
+      }
+      @if (canClose()) {
+        <button type="button" class="btn close-btn" (click)="close()" [disabled]="closing()">
+          @if (closing()) { Closing… } @else { Mark as closed }
+        </button>
+      }
+    </div>
+  </section>
+
+  <div class="detail-grid">
+    <main class="main-pane">
+      <section class="card description-card">
+        <h2>Description</h2>
+        <p class="description">{{ t.description }}</p>
+      </section>
+
+      <section class="card activity-card">
+        <h2>Activity</h2>
+        <ol class="feed">
+          @for (entry of feed(); track entry.at + '-' + entry.item.id) {
+            @if (entry.kind === 'comment') {
+              <li class="feed-item feed-comment">
+                <div class="avatar" aria-hidden="true">{{ entry.item.author.displayName[0] }}</div>
+                <div class="body">
+                  <div class="meta">
+                    <span class="author">{{ entry.item.author.displayName }}</span>
+                    <span class="at muted">{{ entry.at | date:'medium' }}</span>
+                  </div>
+                  <p class="text">{{ entry.item.body }}</p>
+                </div>
+              </li>
+            } @else {
+              <li class="feed-item feed-activity">
+                <div class="dot-icon" aria-hidden="true"></div>
+                <div class="body">
+                  <div class="meta">
+                    <span class="author">{{ entry.item.actor.displayName }}</span>
+                    <span class="at muted">{{ entry.at | date:'medium' }}</span>
+                  </div>
+                  <p class="text subtle">{{ activityLabel(entry.item) }}</p>
+                </div>
+              </li>
+            }
+          }
+        </ol>
+
+        <form class="composer" [formGroup]="commentForm" (ngSubmit)="postComment()" novalidate>
+          <label for="comment-body" class="sr-only">Add a comment</label>
+          <textarea id="comment-body" formControlName="body" rows="3"
+                    [maxlength]="maxBody"
+                    placeholder="Write a reply…"></textarea>
+          <div class="composer-footer">
+            <small class="form-hint">{{ commentForm.controls.body.value.length }} / {{ maxBody }}</small>
+            <button type="submit" [disabled]="commentForm.invalid || posting()">
+              @if (posting()) { Posting… } @else { Post comment }
+            </button>
+          </div>
+          @if (commentError()) {
+            <small class="form-error">{{ commentError() }}</small>
+          }
+        </form>
+      </section>
+
+      @if (t.timeEntries.length > 0 || canMutateStatus()) {
+        <section class="card time-card">
+          <div class="time-header">
+            <h2>Time logged</h2>
+            <span class="time-total">Total: {{ totalLogged() }}</span>
+          </div>
+          @if (canMutateStatus()) {
+            <form class="time-form" [formGroup]="timeLogForm" (ngSubmit)="logTime()" novalidate>
+              <div class="time-form-row">
+                <label>Date
+                  <input type="date" formControlName="workedOn" [max]="today()" />
+                </label>
+                <label>Minutes
+                  <input type="number" formControlName="durationMinutes" min="1" max="1440" />
+                </label>
+              </div>
+              <label>Description
+                <input type="text" formControlName="description" maxlength="1000"
+                       placeholder="What did you work on?" />
+              </label>
+              <div class="composer-footer">
+                @if (timeLogError()) { <small class="form-error">{{ timeLogError() }}</small> }
+                <button type="submit" [disabled]="timeLogForm.invalid || loggingTime()">
+                  @if (loggingTime()) { Logging… } @else { Log time }
+                </button>
+              </div>
+            </form>
+          }
+          @if (t.timeEntries.length > 0) {
+          <table class="time-table">
+            <thead>
+              <tr><th>Author</th><th>Date</th><th>Duration</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              @for (te of t.timeEntries; track te.id) {
+                <tr>
+                  <td>{{ te.author.displayName }}</td>
+                  <td>{{ te.workedOn }}</td>
+                  <td>{{ te.durationMinutes }} min</td>
+                  <td>{{ te.description }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          }
+        </section>
+      }
+    </main>
+
+    <aside class="side-pane">
+      <section class="card side-card">
+        <h3>Details</h3>
+        <dl class="side-list">
+          <dt>Requester</dt>
+          <dd>{{ t.customer.displayName }}</dd>
+          <dt>Assigned agent</dt>
+          <dd>
+            @if (canAssign()) {
+              <select #assigneeSel class="assignee-select"
+                      [disabled]="assigning()"
+                      (change)="onAssigneeChange(assigneeSel.value, assigneeSel)">
+                <option [value]="''" [selected]="!t.assignedAgent">Unassigned</option>
+                @for (a of agents(); track a.id) {
+                  <option [value]="a.id" [selected]="t.assignedAgent?.id === a.id">
+                    {{ a.displayName }}
+                  </option>
+                }
+              </select>
+            } @else {
+              @if (t.assignedAgent) { {{ t.assignedAgent.displayName }} }
+              @else { <span class="subtle">Unassigned</span> }
+            }
+          </dd>
+          <dt>Created</dt>
+          <dd>{{ t.createdAt | date:'medium' }}</dd>
+          <dt>Last updated</dt>
+          <dd>{{ t.updatedAt | date:'medium' }}</dd>
+        </dl>
+      </section>
+    </aside>
+  </div>
+}
+}

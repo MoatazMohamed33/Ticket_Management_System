@@ -1,0 +1,100 @@
+<section class="page-header">
+  <div>
+    <h1>Assigned to me</h1>
+    <p class="muted">Your queue — Criticals first, then most recently updated.</p>
+  </div>
+</section>
+
+<div class="toolbar" [formGroup]="filters">
+  <div class="filter-group filter-search">
+    <label for="filter-search" class="sr-only">Search</label>
+    <input id="filter-search" formControlName="search" type="search"
+           placeholder="Search title or description…" />
+  </div>
+
+  <div class="filter-chips" role="group" aria-label="Status filter">
+    <span class="chip-label">Status</span>
+    @for (s of statusOptions; track s) {
+      <button type="button" class="chip"
+              [class.active]="filters.controls.status.value.includes(s)"
+              [attr.data-status]="s"
+              (click)="toggleStatus(s)">{{ s }}</button>
+    }
+  </div>
+
+  <div class="filter-chips" role="group" aria-label="Priority filter">
+    <span class="chip-label">Priority</span>
+    @for (p of priorityOptions; track p) {
+      <button type="button" class="chip"
+              [class.active]="filters.controls.priority.value.includes(p)"
+              [attr.data-priority]="p"
+              (click)="togglePriority(p)">{{ p }}</button>
+    }
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="state">Loading tickets…</div>
+} @else if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+} @else {
+  @if (result(); as r) {
+    @if (r.items.length === 0) {
+      <div class="empty card">
+        <div class="empty-icon" aria-hidden="true">📥</div>
+        <h3>No tickets assigned</h3>
+        <p class="muted">Your queue is empty — Admin will assign work as it comes in.</p>
+      </div>
+    } @else {
+      <div class="table-wrap card">
+        <table class="tickets-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Customer</th>
+              <th>Status</th>
+              <th>Priority</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of r.items; track t.id) {
+              <tr [class.unread]="isUnread(t)">
+                <td data-label="Title">
+                  @if (isUnread(t)) { <span class="unread-dot" aria-label="Updated since your last visit"></span> }
+                  <a class="ticket-link" [routerLink]="['/customer/tickets', t.id]">{{ t.title }}</a>
+                </td>
+                <td data-label="Customer">{{ t.customerDisplayName ?? '—' }}</td>
+                <td data-label="Status">
+                  <span class="badge status-badge" [attr.data-status]="t.status"
+                        [attr.aria-label]="'Status: ' + t.status">
+                    <span class="dot" aria-hidden="true"></span>{{ t.status }}
+                  </span>
+                </td>
+                <td data-label="Priority">
+                  <span class="badge priority-badge" [attr.data-priority]="t.priority"
+                        [attr.aria-label]="'Priority: ' + t.priority">
+                    <span class="dot" aria-hidden="true"></span>{{ t.priority }}
+                  </span>
+                </td>
+                <td data-label="Updated"><span class="muted">{{ t.updatedAt | date:'mediumDate' }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pager">
+        <button type="button" class="btn-secondary" (click)="prevPage()" [disabled]="page() <= 1 || loading()">
+          ← Prev
+        </button>
+        <span class="pager-info">
+          Page {{ page() }} of {{ result()?.totalPages ?? 0 }} · {{ result()?.totalCount ?? 0 }} total
+        </span>
+        <button type="button" class="btn-secondary" (click)="nextPage()" [disabled]="!canGoNext() || loading()">
+          Next →
+        </button>
+      </div>
+    }
+  }
+}

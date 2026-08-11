@@ -1,0 +1,35 @@
+.page-header {
+  margin-bottom: var(--space-6);
+}
+.page-header h1 { margin-bottom: var(--space-1); }
+.page-header p { margin: 0; }
+
+.ticket-form {
+  max-width: 720px;
+  padding: var(--space-6);
+}
+
+.priority-choice {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+.priority-option {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-3); border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md); cursor: pointer;
+  margin-bottom: 0; font-weight: normal;
+}
+.priority-option input[type=radio] { width: auto; margin: 0; }
+.priority-option[data-priority="Low"]      { border-left: 4px solid #10b981; }
+.priority-option[data-priority="Medium"]   { border-left: 4px solid #f59e0b; }
+.priority-option[data-priority="High"]     { border-left: 4px solid #f97316; }
+.priority-option[data-priority="Critical"] { border-left: 4px solid #ef4444; }
+
+.actions {
+  display: flex; justify-content: flex-end; margin-top: var(--space-5);
+}
+
+@media (max-width: 640px) {
+  .priority-choice { grid-template-columns: repeat(2, 1fr); }
+}

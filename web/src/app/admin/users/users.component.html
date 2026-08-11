@@ -1,0 +1,119 @@
+<section class="page-header">
+  <div>
+    <h1>Users</h1>
+    <p class="muted">Manage support agents, admins, and customer accounts.</p>
+  </div>
+  <button type="button" (click)="openCreate()">+ New user</button>
+</section>
+
+<div class="toolbar" [formGroup]="filters">
+  <div class="filter-group">
+    <label for="filter-search" class="sr-only">Search</label>
+    <input id="filter-search" formControlName="search" type="search"
+           placeholder="Search by name or email…" />
+  </div>
+  <div class="filter-group">
+    <label for="filter-role" class="sr-only">Role</label>
+    <select id="filter-role" formControlName="role">
+      <option value="">All roles</option>
+      <option value="Admin">Admin</option>
+      <option value="SupportAgent">Support Agent</option>
+      <option value="Customer">Customer</option>
+    </select>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="state">Loading users…</div>
+} @else if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+} @else {
+  @if (result(); as r) {
+  @if (r.items.length === 0) {
+    <div class="empty card">
+      <div class="empty-icon" aria-hidden="true">👥</div>
+      <h3>No users match</h3>
+      <p class="muted">Try clearing filters or create a new user.</p>
+      <button type="button" (click)="openCreate()">+ New user</button>
+    </div>
+  }
+  @if (r.items.length > 0) {
+    <div class="table-wrap card">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of r.items; track u.id) {
+            <tr [class.self-row]="isSelf(u)">
+              <td data-label="Name">
+                {{ u.displayName }}
+                @if (isSelf(u)) { <span class="you-tag">You</span> }
+              </td>
+              <td data-label="Email"><span class="mono">{{ u.email }}</span></td>
+              <td data-label="Role">
+                @if (isSelf(u)) {
+                  <span class="badge badge-primary">{{ u.role }}</span>
+                } @else {
+                  <select #roleSel class="role-select"
+                          [value]="u.role"
+                          [disabled]="actionInFlight() === u.id"
+                          (change)="changeRole(u, roleSel.value, roleSel)">
+                    <option value="Admin">Admin</option>
+                    <option value="SupportAgent">Support Agent</option>
+                    <option value="Customer">Customer</option>
+                  </select>
+                }
+              </td>
+              <td data-label="Status">
+                @if (u.isActive) {
+                  <span class="badge badge-success">Active</span>
+                } @else {
+                  <span class="badge badge-danger">Inactive</span>
+                }
+              </td>
+              <td data-label="Created">
+                <span class="muted">{{ u.createdAt | date:'mediumDate' }}</span>
+              </td>
+              <td data-label="Actions" class="actions-col">
+                @if (!isSelf(u) || !u.isActive) {
+                  <button type="button" class="btn-secondary"
+                          [disabled]="actionInFlight() === u.id"
+                          (click)="toggleActive(u)">
+                    @if (u.isActive) { Deactivate } @else { Activate }
+                  </button>
+                } @else {
+                  <span class="subtle">—</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <button type="button" class="btn-secondary" (click)="prevPage()" [disabled]="page() <= 1 || loading()">
+        ← Prev
+      </button>
+      <span class="pager-info">
+        Page {{ page() }} of {{ result()?.totalPages ?? 0 }} · {{ result()?.totalCount ?? 0 }} total
+      </span>
+      <button type="button" class="btn-secondary" (click)="nextPage()" [disabled]="!canGoNext() || loading()">
+        Next →
+      </button>
+    </div>
+  }
+  }
+}
+
+@if (showCreate()) {
+  <app-create-user-dialog (created)="onCreated($event)" (closed)="onCancelCreate()" />
+}

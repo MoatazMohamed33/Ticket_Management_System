@@ -1,0 +1,46 @@
+<div class="auth-page">
+  <div class="auth-card card">
+    <div class="auth-brand">
+      <span class="auth-mark" aria-hidden="true">TS</span>
+      <h1>Ticket System</h1>
+      <p class="muted">Sign in to your account</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="form-group">
+        <label for="login-email">Email</label>
+        <input id="login-email" formControlName="email" type="email"
+               autocomplete="email" placeholder="you@example.com" />
+      </div>
+
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <input id="login-password" formControlName="password" type="password"
+               autocomplete="current-password" placeholder="••••••••" />
+      </div>
+
+      @if (error) {
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+      }
+
+      <button type="submit" class="auth-submit" [disabled]="form.invalid || loading">
+        @if (loading) { Signing in… } @else { Sign in }
+      </button>
+
+      <p class="auth-footer">
+        No account? <a routerLink="/register">Create one</a>
+      </p>
+    </form>
+
+    <div class="auth-demo">
+      <div class="auth-demo-title">Demo credentials</div>
+      <div class="auth-demo-list">
+        <code>admin&#64;demo.local</code> ·
+        <code>agent1&#64;demo.local</code> ·
+        <code>customer1&#64;demo.local</code>
+        <br />
+        <span class="subtle">Password for all: <code>Passw0rd!</code></span>
+      </div>
+    </div>
+  </div>
+</div>

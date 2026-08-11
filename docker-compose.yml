@@ -1,0 +1,65 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      # Fail-fast if DB_SA_PASSWORD is not set — better than a 160s healthcheck hang
+      # (fixes F16 from the code review).
+      MSSQL_SA_PASSWORD: ${DB_SA_PASSWORD:?DB_SA_PASSWORD must be set — copy .env.example to .env and edit}
+      MSSQL_PID: Developer
+    ports:
+      # Bind to loopback only — SQL Server on 1433 open to the LAN is a common accident.
+      - "127.0.0.1:1433:1433"
+    volumes:
+      - db-data:/var/opt/mssql
+    healthcheck:
+      # `-C` trusts the server certificate (required for SQL 2022 sqlcmd v18 defaults).
+      # `-No` is unrelated to cert trust — fixes C3/F17 from the code review.
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      start_period: 60s
+      retries: 10
+      timeout: 5s
+
+  api:
+    build:
+      context: .
+      dockerfile: src/TicketSystem.Api/Dockerfile
+    environment:
+      # Environment is Development ONLY when explicitly set here; the image defaults to Production.
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Default: "Server=db;Database=TicketSystem;User=sa;Password=${DB_SA_PASSWORD};TrustServerCertificate=true;Encrypt=false"
+      Cors__WebOrigin: "http://localhost:4200"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY must be set — see .env.example}
+      Jwt__Issuer: "ticket-system"
+      Jwt__Audience: "ticket-system-web"
+      Jwt__AccessTokenMinutes: "15"
+      Jwt__RefreshTokenDays: "7"
+    ports:
+      - "5080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # aspnet:8.0 image does NOT ship curl — use dotnet's built-in HttpClient via a tiny
+      # shell probe. Fixes C2/F14 from the code review.
+      # Uses /dev/tcp — busybox-compatible; falls back to non-zero exit on failure.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /api/health HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3 || exit 1"]
+      interval: 10s
+      start_period: 30s
+      retries: 5
+      timeout: 5s
+
+  web:
+    build:
+      context: web
+      dockerfile: Dockerfile
+    ports:
+      - "4200:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  db-data:

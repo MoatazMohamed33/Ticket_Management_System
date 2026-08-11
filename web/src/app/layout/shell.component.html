@@ -1,0 +1,95 @@
+<div class="shell" [class.menu-open]="menuOpen()">
+  <!-- Mobile backdrop -->
+  <div class="backdrop" (click)="closeMenu()" aria-hidden="true"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">TS</span>
+      <span class="brand-name">Ticket System</span>
+    </div>
+
+    <nav class="nav">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item">
+        <span class="nav-icon" aria-hidden="true">🏠</span>
+        Home
+      </a>
+
+      @if (auth.hasAnyRole(['Customer'])) {
+        <a routerLink="/customer/tickets" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon" aria-hidden="true">🎫</span>
+          My tickets
+        </a>
+        <a routerLink="/customer/tickets/new" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon" aria-hidden="true">➕</span>
+          New ticket
+        </a>
+      }
+
+      @if (auth.hasAnyRole(['SupportAgent'])) {
+        <div class="nav-section">Support</div>
+        <a routerLink="/agent/tickets" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon" aria-hidden="true">📥</span>
+          Assigned to me
+        </a>
+      }
+
+      @if (auth.hasAnyRole(['Admin'])) {
+        <div class="nav-section">Admin</div>
+        <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon" aria-hidden="true">📊</span>
+          Dashboard
+        </a>
+        <a routerLink="/admin/tickets" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon" aria-hidden="true">🎫</span>
+          All tickets
+        </a>
+        <a routerLink="/admin/users" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon" aria-hidden="true">👥</span>
+          Users
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="version subtle">v0.1 · Epic 2</div>
+    </div>
+  </aside>
+
+  <!-- Main pane: topbar + routed content -->
+  <div class="main">
+    <header class="topbar">
+      <button type="button" class="btn btn-ghost menu-toggle" (click)="toggleMenu()" aria-label="Toggle navigation">
+        <span aria-hidden="true">☰</span>
+      </button>
+
+      <div class="topbar-title">
+        <!-- Route breadcrumbs / page title could live here later. -->
+      </div>
+
+      @if (connectionState() === 'connecting') {
+        <span class="conn-badge conn-connecting" role="status">Reconnecting…</span>
+      } @else if (connectionState() === 'offline') {
+        <button type="button" class="conn-badge conn-offline" (click)="retryConnection()"
+                aria-label="Offline — click to retry">Offline — retry</button>
+      }
+
+      @if (auth.user$ | async; as user) {
+        <div class="topbar-user">
+          <div class="user-meta">
+            <div class="user-name">{{ user.displayName }}</div>
+            <div class="user-role subtle">{{ user.role }}</div>
+          </div>
+          <div class="avatar" [attr.aria-label]="user.displayName">
+            {{ initials(user.displayName) }}
+          </div>
+          <button type="button" class="btn btn-secondary" (click)="auth.logout()">Log out</button>
+        </div>
+      }
+    </header>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

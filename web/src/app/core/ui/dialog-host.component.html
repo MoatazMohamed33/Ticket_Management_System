@@ -1,0 +1,19 @@
+@if (current(); as req) {
+  <div class="dialog-backdrop" (click)="req.kind === 'alert' ? ok() : cancel()">
+    <div class="dialog card" role="dialog" aria-modal="true"
+         [attr.aria-labelledby]="'dlg-title-' + req.id"
+         [attr.aria-describedby]="'dlg-msg-' + req.id"
+         [class.tone-danger]="req.tone === 'danger'"
+         (click)="$event.stopPropagation()">
+      <h2 [id]="'dlg-title-' + req.id" class="dialog-title">{{ req.title }}</h2>
+      <p [id]="'dlg-msg-' + req.id" class="dialog-message">{{ req.message }}</p>
+      <div class="dialog-actions">
+        @if (req.kind === 'confirm') {
+          <button type="button" class="btn-secondary" (click)="cancel()">{{ req.cancelLabel }}</button>
+        }
+        <button type="button" [class.btn-danger]="req.tone === 'danger'"
+                (click)="ok()" cdkFocusInitial autofocus>{{ req.okLabel }}</button>
+      </div>
+    </div>
+  </div>
+}

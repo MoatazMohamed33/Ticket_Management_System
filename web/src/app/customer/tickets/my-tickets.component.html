@@ -1,0 +1,109 @@
+<section class="page-header">
+  <div>
+    <h1>My tickets</h1>
+    <p class="muted">Your requests and their current status.</p>
+  </div>
+  <a routerLink="/customer/tickets/new" class="btn">+ New ticket</a>
+</section>
+
+<div class="toolbar" [formGroup]="filters">
+  <div class="filter-group filter-search">
+    <label for="filter-search" class="sr-only">Search</label>
+    <input id="filter-search" formControlName="search" type="search"
+           placeholder="Search title or description…" />
+  </div>
+
+  <div class="filter-chips" role="group" aria-label="Status filter">
+    <span class="chip-label">Status</span>
+    @for (s of statusOptions; track s) {
+      <button type="button" class="chip"
+              [class.active]="filters.controls.status.value.includes(s)"
+              [attr.data-status]="s"
+              (click)="toggleStatus(s)">{{ s }}</button>
+    }
+  </div>
+
+  <div class="filter-chips" role="group" aria-label="Priority filter">
+    <span class="chip-label">Priority</span>
+    @for (p of priorityOptions; track p) {
+      <button type="button" class="chip"
+              [class.active]="filters.controls.priority.value.includes(p)"
+              [attr.data-priority]="p"
+              (click)="togglePriority(p)">{{ p }}</button>
+    }
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="state">Loading tickets…</div>
+} @else if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+} @else {
+  @if (result(); as r) {
+    @if (r.items.length === 0) {
+      <div class="empty card">
+        <div class="empty-icon" aria-hidden="true">🎫</div>
+        <h3>No tickets yet</h3>
+        <p class="muted">Create your first ticket and we'll take it from there.</p>
+        <a routerLink="/customer/tickets/new" class="btn">+ New ticket</a>
+      </div>
+    } @else {
+      <div class="table-wrap card">
+        <table class="tickets-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Priority</th>
+              <th>Assigned</th>
+              <th>Updated</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of r.items; track t.id) {
+              <tr>
+                <td data-label="Title">
+                  <a class="ticket-link" [routerLink]="['/customer/tickets', t.id]">{{ t.title }}</a>
+                </td>
+                <td data-label="Status">
+                  <span class="badge status-badge" [attr.data-status]="t.status"
+                        [attr.aria-label]="'Status: ' + t.status">
+                    <span class="dot" aria-hidden="true"></span>{{ t.status }}
+                  </span>
+                </td>
+                <td data-label="Priority">
+                  <span class="badge priority-badge" [attr.data-priority]="t.priority"
+                        [attr.aria-label]="'Priority: ' + t.priority">
+                    <span class="dot" aria-hidden="true"></span>{{ t.priority }}
+                  </span>
+                </td>
+                <td data-label="Assigned">
+                  @if (t.assignedAgentDisplayName) {
+                    {{ t.assignedAgentDisplayName }}
+                  } @else {
+                    <span class="subtle">Unassigned</span>
+                  }
+                </td>
+                <td data-label="Updated"><span class="muted">{{ t.updatedAt | date:'mediumDate' }}</span></td>
+                <td data-label="Created"><span class="muted">{{ t.createdAt | date:'mediumDate' }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pager">
+        <button type="button" class="btn-secondary" (click)="prevPage()" [disabled]="page() <= 1 || loading()">
+          ← Prev
+        </button>
+        <span class="pager-info">
+          Page {{ page() }} of {{ result()?.totalPages ?? 0 }} · {{ result()?.totalCount ?? 0 }} total
+        </span>
+        <button type="button" class="btn-secondary" (click)="nextPage()" [disabled]="!canGoNext() || loading()">
+          Next →
+        </button>
+      </div>
+    }
+  }
+}

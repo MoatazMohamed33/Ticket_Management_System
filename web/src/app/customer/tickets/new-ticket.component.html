@@ -1,0 +1,54 @@
+<section class="page-header">
+  <div>
+    <h1>New ticket</h1>
+    <p class="muted">Describe the issue and pick a priority. Our team will pick it up.</p>
+  </div>
+</section>
+
+<form class="card ticket-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div class="form-group">
+    <label for="title">Title</label>
+    <input id="title" formControlName="title" type="text" maxlength="200"
+           placeholder="Short summary of the issue"
+           [class.invalid]="!!form.controls.title.errors?.['server']" />
+    @if (form.controls.title.errors?.['server']) {
+      <small class="form-error">{{ form.controls.title.errors!['server'] }}</small>
+    }
+  </div>
+
+  <div class="form-group">
+    <label for="description">Description</label>
+    <textarea id="description" formControlName="description" rows="8"
+              [maxlength]="maxDescription"
+              placeholder="What happened, when, and what you've already tried"
+              [class.invalid]="!!form.controls.description.errors?.['server']"></textarea>
+    <small class="form-hint">
+      {{ form.controls.description.value.length }} / {{ maxDescription }}
+    </small>
+    @if (form.controls.description.errors?.['server']) {
+      <small class="form-error">{{ form.controls.description.errors!['server'] }}</small>
+    }
+  </div>
+
+  <div class="form-group">
+    <label>Priority</label>
+    <div class="priority-choice">
+      @for (p of ['Low', 'Medium', 'High', 'Critical']; track p) {
+        <label class="priority-option" [attr.data-priority]="p">
+          <input type="radio" formControlName="priority" [value]="p" />
+          <span>{{ p }}</span>
+        </label>
+      }
+    </div>
+  </div>
+
+  @if (topError()) {
+    <div class="alert alert-danger" role="alert">{{ topError() }}</div>
+  }
+
+  <div class="actions">
+    <button type="submit" [disabled]="form.invalid || loading()">
+      @if (loading()) { Creating… } @else { Create ticket }
+    </button>
+  </div>
+</form>

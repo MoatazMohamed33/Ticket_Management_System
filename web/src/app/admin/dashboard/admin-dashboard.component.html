@@ -1,0 +1,81 @@
+@if (!isDesktop()) {
+  <div class="desktop-only card">
+    <h1>Dashboard</h1>
+    <p>Dashboard is optimized for desktop. Use a larger screen, or
+      <a routerLink="/admin/tickets">go to All tickets</a>.</p>
+  </div>
+} @else if (loading()) {
+  <div class="state">Loading dashboard…</div>
+} @else if (error()) {
+  <div class="alert alert-danger">
+    {{ error() }}
+    <button type="button" (click)="refresh()">Retry</button>
+  </div>
+} @else {
+  @if (summary(); as s) {
+    <section class="dashboard-header">
+      <div>
+        <h1>Dashboard</h1>
+        <p class="muted">Operational snapshot — last 30 days for resolution metric.</p>
+      </div>
+      <button type="button" class="btn-secondary" (click)="refresh()"
+              title="Refresh" aria-label="Refresh dashboard">↻ Refresh</button>
+    </section>
+
+    <div class="tiles">
+      <button type="button" class="tile"
+              (click)="navigate({ status: 'Open,InProgress' })">
+        <div class="tile-value">{{ totalOpen() }}</div>
+        <div class="tile-label">Total open</div>
+      </button>
+
+      <button type="button" class="tile"
+              [class.critical]="s.openCriticalCount > 0"
+              (click)="navigate({ priority: 'Critical', status: 'Open,InProgress' })">
+        <div class="tile-value">
+          @if (s.openCriticalCount > 0) { <span aria-hidden="true">⚠️</span> }
+          {{ s.openCriticalCount }}
+        </div>
+        <div class="tile-label">Open critical</div>
+      </button>
+
+      <div class="tile inert">
+        <div class="tile-value">{{ avgResolutionDisplay() }}</div>
+        <div class="tile-label">Avg resolution (h:mm)</div>
+      </div>
+
+      @if (topLoadedAgent(); as top) {
+        <button type="button" class="tile"
+                (click)="navigate({ assignedAgentId: top.agentId, status: 'Open,InProgress' })">
+          <div class="tile-value">{{ top.openCount + top.inProgressCount }}</div>
+          <div class="tile-label">Top load: {{ top.agentDisplayName }}</div>
+        </button>
+      } @else {
+        <div class="tile inert">
+          <div class="tile-value">🎉</div>
+          <div class="tile-label">All quiet</div>
+        </div>
+      }
+    </div>
+
+    <section class="chart-card card">
+      <h2>Agent workload</h2>
+      <div class="chart-container">
+        <canvas baseChart
+                [type]="'bar'"
+                [data]="chartData()"
+                [options]="chartOptions"
+                [attr.aria-label]="chartAriaLabel()"></canvas>
+      </div>
+      <table class="sr-only">
+        <caption>Agent workload</caption>
+        <thead><tr><th>Agent</th><th>Open</th><th>In Progress</th></tr></thead>
+        <tbody>
+          @for (a of s.agentWorkload; track a.agentId) {
+            <tr><td>{{ a.agentDisplayName }}</td><td>{{ a.openCount }}</td><td>{{ a.inProgressCount }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+}

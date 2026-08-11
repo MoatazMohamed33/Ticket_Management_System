@@ -1,0 +1,54 @@
+<div class="auth-page">
+  <div class="auth-card card">
+    <div class="auth-brand">
+      <span class="auth-mark" aria-hidden="true">TS</span>
+      <h1>Create your account</h1>
+      <p class="muted">Start managing support tickets</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="form-group">
+        <label for="reg-email">Email</label>
+        <input id="reg-email" formControlName="email" type="email"
+               autocomplete="email" placeholder="you@example.com"
+               [class.invalid]="!!form.controls.email.errors?.['server']" />
+        @if (form.controls.email.errors?.['server']) {
+          <small class="form-error">{{ form.controls.email.errors!['server'] }}</small>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="reg-name">Display name</label>
+        <input id="reg-name" formControlName="displayName" type="text"
+               autocomplete="name" placeholder="Your full name"
+               [class.invalid]="!!form.controls.displayName.errors?.['server']" />
+        @if (form.controls.displayName.errors?.['server']) {
+          <small class="form-error">{{ form.controls.displayName.errors!['server'] }}</small>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="reg-password">Password</label>
+        <input id="reg-password" formControlName="password" type="password"
+               autocomplete="new-password" placeholder="••••••••"
+               [class.invalid]="!!form.controls.password.errors?.['server']" />
+        <small class="form-hint">At least 8 characters, one uppercase, one lowercase, one digit.</small>
+        @if (form.controls.password.errors?.['server']) {
+          <small class="form-error">{{ form.controls.password.errors!['server'] }}</small>
+        }
+      </div>
+
+      @if (topError) {
+        <div class="alert alert-danger" role="alert">{{ topError }}</div>
+      }
+
+      <button type="submit" class="auth-submit" [disabled]="form.invalid || loading">
+        @if (loading) { Creating account… } @else { Create account }
+      </button>
+
+      <p class="auth-footer">
+        Already have an account? <a routerLink="/login">Sign in</a>
+      </p>
+    </form>
+  </div>
+</div>

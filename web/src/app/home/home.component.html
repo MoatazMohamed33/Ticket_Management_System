@@ -1,0 +1,79 @@
+@if (auth.user$ | async; as user) {
+  <section class="page-header">
+    <div>
+      <h1>Welcome, {{ user.displayName }}</h1>
+      <p class="muted">
+        Signed in as <strong>{{ user.email }}</strong>
+        <span class="badge badge-primary">{{ user.role }}</span>
+      </p>
+    </div>
+    @switch (role()) {
+      @case ('Customer') {
+        <a routerLink="/customer/tickets/new" class="btn">+ New ticket</a>
+      }
+      @case ('SupportAgent') {
+        <a routerLink="/agent/tickets" class="btn">Open my queue →</a>
+      }
+      @case ('Admin') {
+        <a routerLink="/admin/tickets" class="btn">All tickets →</a>
+      }
+    }
+  </section>
+
+  @if (loading()) {
+    <div class="loading">Loading…</div>
+  } @else {
+    @switch (role()) {
+      @case ('Admin') {
+        @if (summary(); as s) {
+          <section class="stats">
+            <a routerLink="/admin/tickets" class="stat-card">
+              <div class="stat-label">Open + In progress</div>
+              <div class="stat-value">{{ totalOpen() ?? 0 }}</div>
+              <div class="stat-hint subtle">Across all customers</div>
+            </a>
+            <a routerLink="/admin/tickets" [queryParams]="{ status: 'Open', priority: 'Critical' }" class="stat-card">
+              <div class="stat-label">Open critical</div>
+              <div class="stat-value">{{ s.openCriticalCount }}</div>
+              <div class="stat-hint subtle">Needs attention</div>
+            </a>
+            <div class="stat-card">
+              <div class="stat-label">Avg resolution</div>
+              <div class="stat-value">{{ avgResolutionLabel() }}</div>
+              <div class="stat-hint subtle">Last 30 days</div>
+            </div>
+            <a routerLink="/admin/dashboard" class="stat-card">
+              <div class="stat-label">Active agents</div>
+              <div class="stat-value">{{ s.agentWorkload.length }}</div>
+              <div class="stat-hint subtle">See dashboard →</div>
+            </a>
+          </section>
+        }
+      }
+      @case ('SupportAgent') {
+        @if (myTickets(); as r) {
+          <section class="stats">
+            <a routerLink="/agent/tickets" class="stat-card">
+              <div class="stat-label">Assigned to you</div>
+              <div class="stat-value">{{ r.totalCount }}</div>
+              <div class="stat-hint subtle">Open my queue →</div>
+            </a>
+          </section>
+        }
+      }
+      @case ('Customer') {
+        @if (myTickets(); as r) {
+          <section class="stats">
+            <a routerLink="/customer/tickets" class="stat-card">
+              <div class="stat-label">Your tickets</div>
+              <div class="stat-value">{{ r.totalCount }}</div>
+              <div class="stat-hint subtle">See all →</div>
+            </a>
+          </section>
+        }
+      }
+    }
+  }
+} @else {
+  <div class="loading">Loading…</div>
+}
